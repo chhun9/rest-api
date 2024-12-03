@@ -2,7 +2,7 @@
     <div class="request-editor">
         <!-- Selected API Name -->
         <div class="api-name">
-            <h2> apiname : {{ selectedApi?.name }}</h2>
+            <h2> api name : {{ selectedApi?.name }}</h2>
             <h5 v-if="selectedCollection"> collection name : {{ selectedCollection?.name }}</h5>
         </div>
 
@@ -14,7 +14,7 @@
                 <option value="PUT">PUT</option>
                 <option value="DELETE">DELETE</option>
             </select>
-            <input v-model="url" type="text" class="url-input" placeholder="Enter API URL" @blur="analyzeUrl" />
+            <input v-model="url" type="text" class="url-input" placeholder="Enter API URL" @blur="analyzeUrl" @input="analyzeUrl" />
             <button @click="sendRequest" class="send-btn">Send</button>
         </div>
 
@@ -71,6 +71,7 @@ watch(() => props.selectedApi, (newValue, oldValue) => {
     url.value = newValue.url
     headers.value = newValue.headers
     body.value = newValue.body
+    analyzeUrl();
 });
 
 watch(() => method.value , (newValue, oldValue) => {
@@ -89,7 +90,6 @@ watch(() => body.value , (newValue, oldValue) => {
     props.selectedApi.body = newValue;
     saveApi(props.selectedApi);
 });
-
 
 // Save api to backend
 const saveApi = async (api) => {
@@ -148,15 +148,12 @@ const formatRequestBody = () => {
 const sendRequest = async () => {
     try {
         const fullUrl = buildUrlWithParameters(url.value, parameters.value);
-        const requestOptions = {
+        emit('request', {
             method: method.value,
-            headers: {}, // Add headers logic here if needed
-            body: method.value !== 'GET' ? body.value : undefined,
-        };
-
-        const response = await fetch(fullUrl, requestOptions);
-        const result = await response.json();
-        console.log(result);
+            url: fullUrl,
+            headers: headers.value,
+            body: body.value,
+        })
     } catch (error) {
         console.error('Request failed:', error);
     }
@@ -185,14 +182,18 @@ const buildUrlWithParameters = (baseUrl, params) => {
 <style scoped>
 .request-editor {
     padding: 20px;
-    background-color: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    border-right: 1px solid #ddd;
+    background: #f9f9f9;
 }
 
 .api-name h2 {
-    margin: 0 0 20px;
+    margin: 0 0 0px;
     font-size: 24px;
+}
+
+.api-name h5 {
+    margin: 0 0 0px;
+    font-size: 15px;
 }
 
 .method-url {
@@ -275,7 +276,7 @@ const buildUrlWithParameters = (baseUrl, params) => {
 }
 
 .body-input {
-    width: 100%;
+    width: 99%;
     height: 150px;
     padding: 10px;
     font-size: 14px;

@@ -10,6 +10,10 @@
             </div>
         </div>
 
+        <div class="create-new" @click="createNewItem">
+            {{ activeTab === 'collections' ? 'New Collection' : 'New API' }}
+        </div>
+
         <!-- Collection List -->
         <div v-if="activeTab === 'collections'" class="item-list">
             <!-- New Item Input -->
@@ -22,7 +26,7 @@
                 @contextmenu="showContextMenu($event, collection, 'collection', index)">
                 <!-- Only the collection name is highlighted -->
                 <div @click="selectCollection(collection)" :class="{ highlighted: activeCollection === collection }">
-                    {{ collection.name }}
+                    {{ activeCollection === collection ? '▼' : '►' }} {{ collection.name }}
                 </div>
 
                 <!-- APIs under the selected collection -->
@@ -34,8 +38,8 @@
                     </div>
 
                     <!-- Individual APIs -->
-                    <div v-for="(api, apiIndex) in collection.apis" :key="apiIndex" class="item-api"
-                        @click="selectApi(api)"
+                    <div v-for="(api, apiIndex) in collection.apis" :key="apiIndex"
+                        :class="['item-api', { highlighted: selectedApi === api }]" @click="selectApi(api)"
                         @contextmenu="contextApi(api), showContextMenu($event, api, 'api', apiIndex)">
                         - {{ api.name }}
                     </div>
@@ -44,8 +48,6 @@
                     </button>
                 </div>
             </div>
-
-            <button @click="createNewItem">New Collection</button>
         </div>
 
         <!-- Global API List  -->
@@ -54,11 +56,10 @@
                 <input class="new-item-input" v-model="newItemName" @keydown.enter="saveNewItem" @blur="saveNewItem"
                     placeholder="Enter collection name" />
             </div>
-            <div v-for="(api, index) in apis" :key="index" class="item" @click="selectApi(api)"
-                @contextmenu="showContextMenu($event, api, 'api', index)">
+            <div v-for="(api, index) in apis" :key="index" :class="['item', { highlighted: selectedApi === api }]"
+                @click="selectApi(api)" @contextmenu="showContextMenu($event, api, 'api', index)">
                 {{ api.name }}
             </div>
-            <button @click="createNewItem">New API</button>
         </div>
 
         <!-- Context Menu -->
@@ -185,6 +186,7 @@ const saveData = async () => {
 const saveNewItem = () => {
     if (newItemName.value.trim() === '') {
         isAddingItem.value = false;
+        isAddingItemInCollection.value = false;
         return;
     }
 
@@ -226,7 +228,6 @@ const deleteItem = () => {
 
 <style scoped>
 .sidebar {
-    width: 250px;
     padding: 10px;
     background-color: #f4f4f4;
     border-right: 1px solid #ddd;
@@ -252,8 +253,28 @@ const deleteItem = () => {
     font-weight: bold;
 }
 
+.tab.active:hover {
+    background-color: #8fb7f7;
+    font-weight: bold;
+}
+
 .item-list {
     margin-top: 20px;
+}
+
+.create-new {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #5894f5;
+    font-weight: bold;
+    border-radius: 5px;
+    margin-right: 5px;
+}
+
+.create-new:hover {
+    background-color: #4b8cf4;
 }
 
 .item {
@@ -261,13 +282,34 @@ const deleteItem = () => {
     cursor: pointer;
 }
 
+.item .highlighted {
+    background-color: #4d66b5;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .item.highlighted {
-    background-color: #a1c4fd;
+    background-color: #4d66b5;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-api {
+    padding-left: 20px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.item-api:hover {
+    background-color: #7371d5;
     font-weight: bold;
 }
 
-.item:hover {
-    background-color: #a1c4fd;
+.item-api.highlighted {
+    background-color: #4d66b5;
     font-weight: bold;
 }
 
@@ -307,13 +349,13 @@ button:hover {
 .api-list button {
     margin-top: 10px;
     padding: 10px;
-    background-color: #673ed9;
+    background-color: #7cc97f;
     color: white;
     border: none;
     cursor: pointer;
 }
 
 .api-list button:hover {
-    background-color: #5733ba;
+    background-color: #78bd7a;
 }
 </style>
