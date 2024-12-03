@@ -10,12 +10,18 @@ use log::{debug, error, info, LevelFilter};
 const LOG_LEVEL: LevelFilter = LevelFilter::Debug;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+struct Header {
+    key: String,
+    value: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 struct Api {
     id: String,
     name: String,
     method: String,
     url: String,
-    headers: String,
+    headers: Vec<Header>,
     body: String,
 }
 
@@ -53,6 +59,7 @@ fn save_data(data: String) -> Result<(), String> {
 
 #[tauri::command]
 fn save_api(data: String) -> Result<(), String> {
+    debug!("{}", data);
     let read_content = fs::read(get_file_read()).map_err(|e| e.to_string())?;
     let read_content_str = String::from_utf8(read_content).map_err(|e| e.to_string())?;
     let mut app_data: AppData = serde_json::from_str(&read_content_str).map_err(|e| e.to_string())?;

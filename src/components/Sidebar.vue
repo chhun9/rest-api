@@ -124,8 +124,12 @@ const selectCollection = (collection) => {
 };
 
 const selectApi = (api) => {
-    if (activeCollection.value)
+    if (activeCollection.value) {
         emit('selectCollection', activeCollection.value);
+    }
+    else {
+        emit('selectCollection', null);
+    }
     selectedApi.value = api;
     emit('selectApi', selectedApi.value);
 };
@@ -192,7 +196,7 @@ const saveNewItem = () => {
 
     const newItem = activeTab.value === 'collections' && !isAddingItemInCollection.value
         ? { id: crypto.randomUUID(), name: newItemName.value, apis: [] }
-        : { id: crypto.randomUUID(), name: newItemName.value, method: 'GET', url: '', headers: '', body: '' };
+        : { id: crypto.randomUUID(), name: newItemName.value, method: 'GET', url: '', headers: [], body: '' };
 
     if (activeTab.value === 'collections' && !activeCollection.value) {
         collections.value.unshift(newItem);

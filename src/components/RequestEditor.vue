@@ -14,10 +14,21 @@
                 <option value="PUT">PUT</option>
                 <option value="DELETE">DELETE</option>
             </select>
-            <input v-model="url" type="text" class="url-input" placeholder="Enter API URL" @blur="analyzeUrl" @input="analyzeUrl" />
+            <input v-model="url" type="text" class="url-input" placeholder="Enter API URL" @blur="analyzeUrl"
+                @input="analyzeUrl" />
             <button @click="sendRequest" class="send-btn">Send</button>
         </div>
 
+        <!-- Headers -->
+        <div class="request-settings">
+            <h3>Headers</h3>
+            <div v-for="(header, index) in headers" :key="index" class="key-value-pair">
+                <input v-model="header.key" type="text" placeholder="Key" class="key-input" />
+                <input v-model="header.value" type="text" placeholder="Value" class="value-input" />
+                <button @click="removeHeader(index)" class="remove-btn">-</button>
+            </div>
+            <button @click="addHeader" class="add-btn">+ Add Header</button>
+        </div>
         <!-- Parameters -->
         <div class="request-settings">
             <h3>Parameters</h3>
@@ -66,7 +77,7 @@ const parameters = ref([]); // Combined parameters (query + path)
 const body = ref('');
 const emit = defineEmits();
 
-watch(() => props.selectedApi, (newValue, oldValue) => {
+watch(() => props.selectedApi, (newValue) => {
     method.value = newValue.method
     url.value = newValue.url
     headers.value = newValue.headers
@@ -74,19 +85,19 @@ watch(() => props.selectedApi, (newValue, oldValue) => {
     analyzeUrl();
 });
 
-watch(() => method.value , (newValue, oldValue) => {
+watch(() => method.value, (newValue) => {
     props.selectedApi.method = newValue;
     saveApi(props.selectedApi);
 });
-watch(() => url.value , (newValue, oldValue) => {
+watch(() => url.value, (newValue) => {
     props.selectedApi.url = newValue;
     saveApi(props.selectedApi);
 });
-watch(() => headers.value , (newValue, oldValue) => {
+watch(() => headers.value, (newValue) => {
     props.selectedApi.headers = newValue;
     saveApi(props.selectedApi);
 });
-watch(() => body.value , (newValue, oldValue) => {
+watch(() => body.value, (newValue) => {
     props.selectedApi.body = newValue;
     saveApi(props.selectedApi);
 });
@@ -100,6 +111,10 @@ const saveApi = async (api) => {
 // Add and remove handlers
 const addParameter = () => parameters.value.push({ type: 'Query', key: '', value: '' });
 const removeParameter = (index) => parameters.value.splice(index, 1);
+
+// Add and remove header handlers
+const addHeader = () => headers.value.push({ key: '', value: '' });
+const removeHeader = (index) => headers.value.splice(index, 1);
 
 // Analyze URL to extract query and path parameters
 const analyzeUrl = () => {
