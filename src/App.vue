@@ -1,6 +1,4 @@
 <script setup>
-import { ref } from "vue";
-import { invoke } from "@tauri-apps/api/core";
 import ApiTool from "./views/ApiTool.vue";
 
 </script>
@@ -12,6 +10,10 @@ import ApiTool from "./views/ApiTool.vue";
 </template>
 
 <style>
+body {
+  margin: 0;
+}
+
 :root {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;

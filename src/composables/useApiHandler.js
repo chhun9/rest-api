@@ -1,22 +1,33 @@
 import { ref } from 'vue';
-import axios from 'axios';
+import { invoke } from '@tauri-apps/api/core';
 
 export function useApiHandler() {
-  const response = ref('');
+    const isLoading = ref(false);
+    const response = ref(null);
 
-  const sendRequest = async ({ method, url, headers, body }) => {
-    try {
-      const res = await axios({
-        method,
-        url,
-        headers,
-        data: body || null,
-      });
-      response.value = JSON.stringify(res.data, null, 2);
-    } catch (error) {
-      response.value = JSON.stringify(error.response?.data || error.message, null, 2);
-    }
-  };
+    const sendRequest = async ({ method, url, headers, body }) => {
+        isLoading.value = true;
+        response.value = null;
+        try {
+            response.value = await invoke('send_request',{
+              method, url, headers, body: body || null
+            });
+        } catch (error) {
+            console.error(error);
+        } finally {
+            isLoading.value = false;
+        }
+    };
 
-  return { response, sendRequest };
+    const cancelRequest = async () => {
+        try {
+            isLoading.value = false;
+            response.value = null;
+            await invoke('cancel_request');
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    return { sendRequest, cancelRequest, isLoading, response };
 }

@@ -5,7 +5,7 @@ import RequestEditor from '@/components/RequestEditor.vue';
 import ResponseViewer from '@/components/ResponseViewer.vue';
 import { useApiHandler } from '@/composables/useApiHandler';
 
-const { sendRequest, response } = useApiHandler();
+const { sendRequest, cancelRequest, isLoading, response } = useApiHandler();
 const selectedApi = ref(null);
 const selectedCollection = ref(null);
 const editorWidth = ref(50);
@@ -49,13 +49,16 @@ const stopResize = (e) => {
     <Sidebar @selectApi="handleApiFromSidebar" @selectCollection="handleCollectionFromSidebar" />
 
     <!-- Request Editor: 요청 작성 -->
-    <RequestEditor :style="{ width: editorWidth + '%' }" :selectedApi="selectedApi" :selectedCollection="selectedCollection"
-      @request="handleRequest" />
+    <RequestEditor :style="{ width: editorWidth + '%' }" :selectedApi="selectedApi"
+      :selectedCollection="selectedCollection" @request="handleRequest" />
 
     <div class="request-resizer" @mousedown="startResize" />
 
     <!-- Response Viewer: 응답 데이터 -->
-    <ResponseViewer :response="response" />
+    <ResponseViewer 
+    :isLoading="isLoading"
+    :response="response" 
+    @cancel="cancelRequest"/>
   </div>
 </template>
 
@@ -70,8 +73,8 @@ const stopResize = (e) => {
   width: 3px;
   border-left: solid 1px;
   border-right: solid 1px;
-  cursor: e-resize;
-  transition: background-color ;
+  cursor: ew-resize;
+  transition: top ease-out 0.5s;
 }
 
 .request-resizer:hover {

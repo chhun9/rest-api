@@ -2,11 +2,11 @@
     <div class="sidebar">
         <!-- Tab Buttons for Collections and API List -->
         <div class="tabs">
-            <div :class="['tab', { active: activeTab === 'collections' }]" @click="setActiveTab('collections')">
-                Collections
-            </div>
             <div :class="['tab', { active: activeTab === 'apis' }]" @click="setActiveTab('apis')">
                 API List
+            </div>
+            <div :class="['tab', { active: activeTab === 'collections' }]" @click="setActiveTab('collections')">
+                Collections
             </div>
         </div>
 
@@ -196,7 +196,7 @@ const saveNewItem = () => {
 
     const newItem = activeTab.value === 'collections' && !isAddingItemInCollection.value
         ? { id: crypto.randomUUID(), name: newItemName.value, apis: [] }
-        : { id: crypto.randomUUID(), name: newItemName.value, method: 'GET', url: '', headers: [], body: '' };
+        : { id: crypto.randomUUID(), name: newItemName.value, method: 'GET', url: '', headers: [], parameters:[], body: '' };
 
     if (activeTab.value === 'collections' && !activeCollection.value) {
         collections.value.unshift(newItem);
@@ -232,6 +232,7 @@ const deleteItem = () => {
 
 <style scoped>
 .sidebar {
+    min-width: 250px;
     padding: 10px;
     background-color: #f4f4f4;
     border-right: 1px solid #ddd;

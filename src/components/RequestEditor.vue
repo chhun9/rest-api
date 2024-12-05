@@ -14,34 +14,34 @@
                 <option value="PUT">PUT</option>
                 <option value="DELETE">DELETE</option>
             </select>
-            <input v-model="url" type="text" class="url-input" placeholder="Enter API URL" @blur="analyzeUrl"
-                @input="analyzeUrl" />
+            <input v-model="url" type="text" class="url-input" placeholder="Enter API URL" @blur="analyzeUrl" />
             <button @click="sendRequest" class="send-btn">Send</button>
         </div>
 
         <!-- Headers -->
         <div class="request-settings">
             <h3>Headers</h3>
+            <button @click="addHeader" class="add-btn">+ Add Header</button>
             <div v-for="(header, index) in headers" :key="index" class="key-value-pair">
                 <input v-model="header.key" type="text" placeholder="Key" class="key-input" />
                 <input v-model="header.value" type="text" placeholder="Value" class="value-input" />
                 <button @click="removeHeader(index)" class="remove-btn">-</button>
             </div>
-            <button @click="addHeader" class="add-btn">+ Add Header</button>
         </div>
+
         <!-- Parameters -->
         <div class="request-settings">
             <h3>Parameters</h3>
+            <button @click="addParameter" class="add-btn">+ Add Parameter</button>
             <div v-for="(param, index) in parameters" :key="index" class="key-value-pair">
-                <select v-model="param.type" class="param-type-select">
-                    <option value="Path">Path</option>
-                    <option value="Query">Query</option>
+                <select v-model="param.parameter_type" class="param-type-select">
+                    <option value="PATH">PATH</option>
+                    <option value="QUERY">QUERY</option>
                 </select>
                 <input v-model="param.key" type="text" placeholder="Key" class="key-input" />
                 <input v-model="param.value" type="text" placeholder="Value" class="value-input" />
                 <button @click="removeParameter(index)" class="remove-btn">-</button>
             </div>
-            <button @click="addParameter" class="add-btn">+ Add Parameter</button>
         </div>
 
         <!-- Request Body -->
@@ -55,6 +55,7 @@
 
 <script setup>
 import { ref, defineProps, watch, defineEmits } from 'vue';
+import JsonEditorVue from 'json-editor-vue'
 import { invoke } from '@tauri-apps/api/core';
 
 // Props: receive selectedApi from the parent (sidebar)
@@ -73,7 +74,7 @@ const props = defineProps({
 const method = ref('');
 const url = ref('');
 const headers = ref([]);
-const parameters = ref([]); // Combined parameters (query + path)
+const parameters = ref([]);
 const body = ref('');
 const emit = defineEmits();
 
@@ -81,6 +82,7 @@ watch(() => props.selectedApi, (newValue) => {
     method.value = newValue.method
     url.value = newValue.url
     headers.value = newValue.headers
+    parameters.value = newValue.parameters
     body.value = newValue.body
     analyzeUrl();
 });
@@ -96,7 +98,11 @@ watch(() => url.value, (newValue) => {
 watch(() => headers.value, (newValue) => {
     props.selectedApi.headers = newValue;
     saveApi(props.selectedApi);
-});
+}, { deep: true });
+watch(() => parameters.value, (newValue) => {
+    props.selectedApi.parameters = newValue;
+    saveApi(props.selectedApi);
+}, { deep: true });
 watch(() => body.value, (newValue) => {
     props.selectedApi.body = newValue;
     saveApi(props.selectedApi);
@@ -109,7 +115,7 @@ const saveApi = async (api) => {
 };
 
 // Add and remove handlers
-const addParameter = () => parameters.value.push({ type: 'Query', key: '', value: '' });
+const addParameter = () => parameters.value.push({ parameter_type: 'QUERY', key: '', value: '' });
 const removeParameter = (index) => parameters.value.splice(index, 1);
 
 // Add and remove header handlers
@@ -118,20 +124,20 @@ const removeHeader = (index) => headers.value.splice(index, 1);
 
 // Analyze URL to extract query and path parameters
 const analyzeUrl = () => {
-    parameters.value = []; // Reset parameters
-
+    url.value = url.value.trim()
+    const currentParams = [...parameters.value];
     const urlWithoutQuery = url.value.split('?')[0];
     const queryString = url.value.split('?')[1];
+
+    parameters.value = [];
 
     // Extract Path Params
     const pathParams = urlWithoutQuery.match(/{([^}]+)}/g);
     if (pathParams) {
         pathParams.forEach((param) => {
-            parameters.value.push({
-                type: 'Path',
-                key: param.replace(/[{}]/g, ''), // Remove curly braces
-                value: '',
-            });
+            const key = param.replace(/[{}]/g, '')
+            const existingParam = currentParams.find(p => p.key === key && p.parameter_type === 'PATH')
+            parameters.value.push(existingParam || { parameter_type: 'PATH', key, value: '' })
         });
     }
 
@@ -140,13 +146,18 @@ const analyzeUrl = () => {
         const queries = queryString.split('&');
         queries.forEach((query) => {
             const [key, value] = query.split('=');
-            parameters.value.push({
-                type: 'Query',
-                key: decodeURIComponent(key),
-                value: decodeURIComponent(value || ''),
-            });
+            const decodeKey = decodeURIComponent(key)
+            const decodeValue = decodeURIComponent(value || '')
+            const existingParam = currentParams.find(p => p.key === decodeKey && p.parameter_type === 'QUERY')
+            parameters.value.push(existingParam || { parameter_type: 'QUERY', key: decodeKey, value: decodeValue })
         });
     }
+
+    currentParams.forEach(param => {
+        if (!parameters.value.find(p => p.key === param.key && p.parameter_type === param.parameter_type)) {
+            parameters.value.push(param)
+        }
+    })
 };
 
 // Format JSON in Request Body
@@ -163,11 +174,17 @@ const formatRequestBody = () => {
 const sendRequest = async () => {
     try {
         const fullUrl = buildUrlWithParameters(url.value, parameters.value);
+        const requestHeaders = headers.value.reduce((header, current) => {
+            if (current_key && current.value) {
+                header.push({ key: current_key, value: current.value })
+            }
+            return header
+        }, []);
         emit('request', {
             method: method.value,
             url: fullUrl,
-            headers: headers.value,
-            body: body.value,
+            headers: requestHeaders,
+            body: body.value
         })
     } catch (error) {
         console.error('Request failed:', error);
@@ -180,14 +197,14 @@ const buildUrlWithParameters = (baseUrl, params) => {
 
     // Replace Path Params
     params
-        .filter((param) => param.type === 'Path' && param.key)
+        .filter((param) => param.parameter_type === 'PATH' && param.key)
         .forEach((param) => {
             finalUrl = finalUrl.replace(`{${param.key}}`, encodeURIComponent(param.value));
         });
 
     // Append Query Params
     const queryParams = params
-        .filter((param) => param.type === 'Query' && param.key)
+        .filter((param) => param.parameter_type === 'QUERY' && param.key)
         .map((param) => `${encodeURIComponent(param.key)}=${encodeURIComponent(param.value)}`)
         .join('&');
     return queryParams ? `${finalUrl.split('?')[0]}?${queryParams}` : finalUrl;
@@ -196,7 +213,7 @@ const buildUrlWithParameters = (baseUrl, params) => {
 
 <style scoped>
 .request-editor {
-    padding: 20px;
+    padding: 10px;
     border-right: 1px solid #ddd;
     background: #f9f9f9;
 }
@@ -213,9 +230,8 @@ const buildUrlWithParameters = (baseUrl, params) => {
 
 .method-url {
     display: flex;
-    align-items: center;
     gap: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .method-select,
@@ -223,6 +239,10 @@ const buildUrlWithParameters = (baseUrl, params) => {
 .send-btn {
     padding: 8px;
     font-size: 14px;
+}
+
+.url-input {
+    width: 100%;
 }
 
 .send-btn {
@@ -238,13 +258,12 @@ const buildUrlWithParameters = (baseUrl, params) => {
 
 .request-settings h3,
 .request-body h3 {
-    margin: 20px 0 10px;
+    margin: 10px 0;
     font-size: 18px;
 }
 
 .key-value-pair {
     display: flex;
-    align-items: center;
     gap: 10px;
     margin-bottom: 10px;
 }
@@ -291,7 +310,7 @@ const buildUrlWithParameters = (baseUrl, params) => {
 }
 
 .body-input {
-    width: 99%;
+    width: 97%;
     height: 150px;
     padding: 10px;
     font-size: 14px;
