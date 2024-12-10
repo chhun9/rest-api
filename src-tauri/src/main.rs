@@ -135,6 +135,7 @@ async fn send_request(
             "GET" => client.get(&url),
             "POST" => client.post(&url),
             "PUT" => client.put(&url),
+            "PATCH" => client.patch(&url),
             "DELETE" => client.delete(&url),
             _ => return Err(format!("Unsupported method: {}", method)),
         };

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "rest-api-test",
+  "productName": "free-api-client",
   "version": "0.1.0",
-  "identifier": "com.rest-api-test.app",
+  "identifier": "com.free-api-client.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
-        "title": "rest-api-test",
-        "width": 800,
-        "height": 600
+        "title": "free-api-client",
+        "width": 1500,
+        "height": 750,
+        "minWidth": 1500,
+        "minHeight": 750
       }
     ],
     "security": {

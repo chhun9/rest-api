@@ -2,7 +2,7 @@
     <div class="request-editor">
         <!-- Selected API Name -->
         <div class="api-name">
-            <h2> api name : {{ selectedApi?.name }}</h2>
+            <h2> {{ selectedApi?.name }}</h2>
             <h5 v-if="selectedCollection"> collection name : {{ selectedCollection?.name }}</h5>
         </div>
 
@@ -12,6 +12,7 @@
                 <option value="GET">GET</option>
                 <option value="POST">POST</option>
                 <option value="PUT">PUT</option>
+                <option value="PATCH">PATCH</option>
                 <option value="DELETE">DELETE</option>
             </select>
             <input v-model="url" type="text" class="url-input" placeholder="Enter API URL" @blur="analyzeUrl" />
@@ -20,43 +21,48 @@
 
         <!-- Headers -->
         <div class="request-settings">
-            <h3>Headers</h3>
-            <button @click="addHeader" class="add-btn">+ Add Header</button>
-            <div v-for="(header, index) in headers" :key="index" class="key-value-pair">
-                <input v-model="header.key" type="text" placeholder="Key" class="key-input" />
-                <input v-model="header.value" type="text" placeholder="Value" class="value-input" />
-                <button @click="removeHeader(index)" class="remove-btn">-</button>
+            <div class="headers-settings">
+                <h3>Headers
+                    <div @click="addHeader" class="add-btn">
+                        + Add Header
+                    </div>
+                </h3>
+                <div v-for="(header, index) in headers" :key="index" class="key-value-pair">
+                    <input v-model="header.key" type="text" placeholder="Key" class="key-input" />
+                    <input v-model="header.value" type="text" placeholder="Value" class="value-input" />
+                    <div @click="removeHeader(index)" class="remove-btn">X</div>
+                </div>
             </div>
-        </div>
-
-        <!-- Parameters -->
-        <div class="request-settings">
-            <h3>Parameters</h3>
-            <button @click="addParameter" class="add-btn">+ Add Parameter</button>
-            <div v-for="(param, index) in parameters" :key="index" class="key-value-pair">
-                <select v-model="param.parameter_type" class="param-type-select">
-                    <option value="PATH">PATH</option>
-                    <option value="QUERY">QUERY</option>
-                </select>
-                <input v-model="param.key" type="text" placeholder="Key" class="key-input" />
-                <input v-model="param.value" type="text" placeholder="Value" class="value-input" />
-                <button @click="removeParameter(index)" class="remove-btn">-</button>
+            <div class="parameters-settings">
+                <h3>Parameters
+                    <div @click="addParameter" class="add-btn">
+                        + Add Parameter
+                    </div>
+                </h3>
+                <div v-for="(param, index) in parameters" :key="index" class="key-value-pair">
+                    <select v-model="param.parameter_type" class="param-type-select">
+                        <option value="PATH">PATH</option>
+                        <option value="QUERY">QUERY</option>
+                    </select>
+                    <input v-model="param.key" type="text" placeholder="Key" class="key-input" />
+                    <input v-model="param.value" type="text" placeholder="Value" class="value-input" />
+                    <div @click="removeParameter(index)" class="remove-btn">X</div>
+                </div>
             </div>
         </div>
 
         <!-- Request Body -->
         <div v-if="method !== 'GET'" class="request-body">
             <h3>Request Body</h3>
-            <textarea v-model="body" class="body-input" placeholder="Enter JSON body"></textarea>
-            <button @click="formatRequestBody" class="format-btn">Format JSON</button>
+            <JsonEditorVue class="body-input" v-model="body" mode="text" :main-menu-bar="false" />
         </div>
     </div>
 </template>
 
 <script setup>
 import { ref, defineProps, watch, defineEmits } from 'vue';
-import JsonEditorVue from 'json-editor-vue'
 import { invoke } from '@tauri-apps/api/core';
+import JsonEditorVue from 'json-editor-vue'
 
 // Props: receive selectedApi from the parent (sidebar)
 const props = defineProps({
@@ -89,6 +95,13 @@ watch(() => props.selectedApi, (newValue) => {
 
 watch(() => method.value, (newValue) => {
     props.selectedApi.method = newValue;
+    if (newValue !== 'GET') {
+        if (headers.value.findIndex(h => h.key.toLowerCase() === 'content-type') < 0) {
+            headers.value.push({ key: 'Content-Type', value: 'application/json' })
+        }
+    } else {
+        headers.value = []
+    }
     saveApi(props.selectedApi);
 });
 watch(() => url.value, (newValue) => {
@@ -125,6 +138,9 @@ const removeHeader = (index) => headers.value.splice(index, 1);
 // Analyze URL to extract query and path parameters
 const analyzeUrl = () => {
     url.value = url.value.trim()
+    if (!url.value.startsWith('http')) {
+        url.value = 'http://' + url.value
+    }
     const currentParams = [...parameters.value];
     const urlWithoutQuery = url.value.split('?')[0];
     const queryString = url.value.split('?')[1];
@@ -160,23 +176,13 @@ const analyzeUrl = () => {
     })
 };
 
-// Format JSON in Request Body
-const formatRequestBody = () => {
-    try {
-        const formattedBody = JSON.stringify(JSON.parse(body.value), null, 2);
-        body.value = formattedBody;
-    } catch (error) {
-        alert('Invalid JSON format! Please correct the body before formatting.');
-    }
-};
-
 // Send Request
 const sendRequest = async () => {
     try {
         const fullUrl = buildUrlWithParameters(url.value, parameters.value);
         const requestHeaders = headers.value.reduce((header, current) => {
-            if (current_key && current.value) {
-                header.push({ key: current_key, value: current.value })
+            if (current.key && current.value) {
+                header.push({ key: current.key, value: current.value })
             }
             return header
         }, []);
@@ -213,9 +219,11 @@ const buildUrlWithParameters = (baseUrl, params) => {
 
 <style scoped>
 .request-editor {
+    min-width: 520px;
+    width: 50%;
     padding: 10px;
     border-right: 1px solid #ddd;
-    background: #f9f9f9;
+    overflow-y: scroll;
 }
 
 .api-name h2 {
@@ -228,6 +236,23 @@ const buildUrlWithParameters = (baseUrl, params) => {
     font-size: 15px;
 }
 
+.request-settings {
+    display: flex;
+    width: 100%;
+}
+
+.request-settings h3,
+.request-body h3 {
+    margin: 0;
+    font-size: 15px;
+    display: flex;
+}
+
+.headers-settings,
+.parmeters-settings {
+    width: 100%;
+}
+
 .method-url {
     display: flex;
     gap: 10px;
@@ -237,7 +262,7 @@ const buildUrlWithParameters = (baseUrl, params) => {
 .method-select,
 .url-input,
 .send-btn {
-    padding: 8px;
+    padding: 5px;
     font-size: 14px;
 }
 
@@ -256,23 +281,18 @@ const buildUrlWithParameters = (baseUrl, params) => {
     background-color: #45a049;
 }
 
-.request-settings h3,
-.request-body h3 {
-    margin: 10px 0;
-    font-size: 18px;
-}
-
 .key-value-pair {
     display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 5px;
+    margin-bottom: 5px;
 }
 
-.key-input,
+.key-input {
+    width: 35%;
+}
+
 .value-input {
-    padding: 8px;
-    font-size: 14px;
-    flex: 1;
+    width: 45%;
 }
 
 .param-type-select {
@@ -281,41 +301,26 @@ const buildUrlWithParameters = (baseUrl, params) => {
 }
 
 .add-btn,
-.remove-btn,
-.format-btn {
-    padding: 6px 10px;
-    font-size: 14px;
-    border: none;
+.remove-btn {
+    color: gray;
+    font-size: 11px;
     cursor: pointer;
 }
 
 .add-btn {
-    background-color: #007bff;
-    color: white;
+    margin-left: 15px;
+}
+
+.add-btn:hover {
+    background-color: #e3e2e2;
 }
 
 .remove-btn {
-    background-color: #dc3545;
-    color: white;
+    width: 10px;
 }
 
-.format-btn {
-    background-color: #007bff;
-    color: white;
-    margin-top: 10px;
-}
-
-.format-btn:hover {
-    background-color: #0056b3;
-}
-
-.body-input {
-    width: 97%;
-    height: 150px;
-    padding: 10px;
-    font-size: 14px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+.remove-btn:hover {
+    background-color: #e3e2e2;
 }
 
 .param-type {
@@ -323,7 +328,6 @@ const buildUrlWithParameters = (baseUrl, params) => {
     text-align: center;
     font-size: 12px;
     color: #fff;
-    background-color: #6c757d;
     border-radius: 4px;
     padding: 2px 5px;
 }

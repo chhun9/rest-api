@@ -2,11 +2,11 @@
     <div class="sidebar">
         <!-- Tab Buttons for Collections and API List -->
         <div class="tabs">
-            <div :class="['tab', { active: activeTab === 'apis' }]" @click="setActiveTab('apis')">
-                API List
-            </div>
             <div :class="['tab', { active: activeTab === 'collections' }]" @click="setActiveTab('collections')">
                 Collections
+            </div> 
+            <div :class="['tab', { active: activeTab === 'apis' }]" @click="setActiveTab('apis')">
+                APIs
             </div>
         </div>
 
@@ -41,7 +41,8 @@
                     <div v-for="(api, apiIndex) in collection.apis" :key="apiIndex"
                         :class="['item-api', { highlighted: selectedApi === api }]" @click="selectApi(api)"
                         @contextmenu="contextApi(api), showContextMenu($event, api, 'api', apiIndex)">
-                        - {{ api.name }}
+                        <div class="item-api-method" :style="{ backgroundColor: getMethodColor(api.method) }">{{
+                            api.method }} </div>{{ api.name }}
                     </div>
                     <button class="btn-in-collection" @click="createNewApi">
                         New API in {{ activeCollection.name }}
@@ -56,9 +57,10 @@
                 <input class="new-item-input" v-model="newItemName" @keydown.enter="saveNewItem" @blur="saveNewItem"
                     placeholder="Enter collection name" />
             </div>
-            <div v-for="(api, index) in apis" :key="index" :class="['item', { highlighted: selectedApi === api }]"
+            <div v-for="(api, index) in apis" :key="index" :class="['item-api', { highlighted: selectedApi === api }]"
                 @click="selectApi(api)" @contextmenu="showContextMenu($event, api, 'api', index)">
-                {{ api.name }}
+                <div class="item-api-method" :style="{ backgroundColor: getMethodColor(api.method) }">{{ api.method }}
+                </div>{{ api.name }}
             </div>
         </div>
 
@@ -95,6 +97,18 @@ onMounted(() => {
 onUnmounted(() => {
     document.removeEventListener('click', handleOutsideClick);
 });
+
+const getMethodColor = (method) => {
+    switch (method) {
+        case 'GET': return '#5692b3';
+        case 'POST': return '#679a73';
+        case 'PUT': return '#7dcdcb';
+        case 'PATCH': return '#51988f';
+        case 'DELETE': return '#c56767';
+        default: return '#888';
+    }
+}
+
 // Load data from backend
 const loadData = async () => {
     try {
@@ -196,7 +210,7 @@ const saveNewItem = () => {
 
     const newItem = activeTab.value === 'collections' && !isAddingItemInCollection.value
         ? { id: crypto.randomUUID(), name: newItemName.value, apis: [] }
-        : { id: crypto.randomUUID(), name: newItemName.value, method: 'GET', url: '', headers: [], parameters:[], body: '' };
+        : { id: crypto.randomUUID(), name: newItemName.value, method: 'GET', url: '', headers: [], parameters: [], body: '' };
 
     if (activeTab.value === 'collections' && !activeCollection.value) {
         collections.value.unshift(newItem);
@@ -234,13 +248,14 @@ const deleteItem = () => {
 .sidebar {
     min-width: 250px;
     padding: 10px;
-    background-color: #f4f4f4;
     border-right: 1px solid #ddd;
+    overflow-y: scroll;
 }
 
 .tabs {
     display: flex;
     margin-bottom: 10px;
+    gap: 10px;
 }
 
 .tab {
@@ -250,7 +265,6 @@ const deleteItem = () => {
     cursor: pointer;
     background-color: #e4e4e4;
     border-radius: 5px;
-    margin-right: 5px;
 }
 
 .tab.active {
@@ -264,7 +278,7 @@ const deleteItem = () => {
 }
 
 .item-list {
-    margin-top: 20px;
+    margin-top: 10px;
 }
 
 .create-new {
@@ -275,51 +289,58 @@ const deleteItem = () => {
     background-color: #5894f5;
     font-weight: bold;
     border-radius: 5px;
-    margin-right: 5px;
 }
 
 .create-new:hover {
     background-color: #4b8cf4;
 }
 
-.item {
-    padding: 10px;
-    cursor: pointer;
-}
-
 .item .highlighted {
     background-color: #4d66b5;
     font-weight: bold;
     overflow: hidden;
+    color: white;
     text-overflow: ellipsis;
-}
-
-.item.highlighted {
-    background-color: #4d66b5;
-    font-weight: bold;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.item-api {
-    padding-left: 20px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.item-api:hover {
-    background-color: #7371d5;
-    font-weight: bold;
 }
 
 .item-api.highlighted {
     background-color: #4d66b5;
     font-weight: bold;
+    overflow: hidden;
+    color: white;
+    text-overflow: ellipsis;
+}
+
+.item-api {
+    margin-top: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: flex;
+    gap: 5px;
+}
+
+.item-api-method {
+    width: 42px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 10px;
+    color: white;
+    opacity: 0.8;
+}
+
+.item:hover {
+    cursor: pointer;
+}
+
+.item-api:hover {
+    background-color: #7371d5;
+    font-weight: bold;
+    cursor: pointer;
 }
 
 button {
-    margin-top: 10px;
     padding: 10px;
     background-color: #4caf50;
     color: white;
@@ -335,12 +356,11 @@ button:hover {
     position: absolute;
     background-color: white;
     border: 1px solid #ddd;
-    padding: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
 .context-menu button {
-    background-color: #ff4d4d;
+    background-color: gray;
     border: none;
     color: white;
     padding: 5px 10px;
@@ -348,7 +368,7 @@ button:hover {
 }
 
 .context-menu button:hover {
-    background-color: #ff0000;
+    background-color: rgb(113, 113, 113)
 }
 
 .api-list button {

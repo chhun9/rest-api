@@ -55,10 +55,7 @@ const stopResize = (e) => {
     <div class="request-resizer" @mousedown="startResize" />
 
     <!-- Response Viewer: 응답 데이터 -->
-    <ResponseViewer 
-    :isLoading="isLoading"
-    :response="response" 
-    @cancel="cancelRequest"/>
+    <ResponseViewer :isLoading="isLoading" :response="response" @cancel="cancelRequest" />
   </div>
 </template>
 
@@ -67,6 +64,13 @@ const stopResize = (e) => {
   display: flex;
   height: 100vh;
   width: 100vw;
+}
+
+.sidebar,
+.request-editor,
+.response-viewer {
+  overflow-y: auto;
+  overflow-x: auto;
 }
 
 .request-resizer {

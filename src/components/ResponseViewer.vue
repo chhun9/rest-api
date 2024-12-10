@@ -5,7 +5,7 @@ import 'vue-json-pretty/lib/styles.css';
 
 const props = defineProps({
     response: [String, Object],
-    isLoading: Boolean, 
+    isLoading: Boolean,
 });
 const emit = defineEmits(['cancel']);
 </script>
@@ -17,26 +17,16 @@ const emit = defineEmits(['cancel']);
             <p>Loading...</p>
             <button @click="emit('cancel')">Cancel</button>
         </div>
-        <VueJsonPretty
-            v-else-if="response"
-            :data="response"
-            showIcon
-            showLineNumber
-            showLine
-            showLength
-            showDoubleQuotes
-            showKeyValueSpace
-            collapseOnClickBrackets
-        />
+        <VueJsonPretty v-else-if="response" :data="response" showIcon showLineNumber showLine showLength
+            showDoubleQuotes showKeyValueSpace collapseOnClickBrackets virtual :height="700" />
         <p v-else>No response yet</p>
     </div>
 </template>
 
 <style>
 .response-viewer {
-    width: 40%;
+    width: 50%;
     padding: 1rem;
-    background: #f9f9f9;
     border-left: 1px solid #ddd;
     position: relative;
 }
@@ -57,7 +47,7 @@ const emit = defineEmits(['cancel']);
 .loading-overlay button {
     margin-top: 1rem;
     padding: 0.5rem 1rem;
-    background: #e74c3c; /* 취소 버튼 색상 */
+    background: #e74c3c;
     color: #fff;
     border: none;
     border-radius: 4px;
